@@ -351,11 +351,27 @@ btnGrabar.addEventListener("click", async () => {
     return;
   }
   chunks = [];
-  const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
-  mediaRecorder = mime ? new MediaRecorder(streamMic, { mimeType: mime }) : new MediaRecorder(streamMic);
-  mediaRecorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  let mime = "";
+  for (const tipo of ["audio/webm", "audio/mp4", "audio/wav", "audio/ogg"]) {
+    if (MediaRecorder.isTypeSupported(tipo)) {
+      mime = tipo;
+      break;
+    }
+  }
+  mediaRecorder = new MediaRecorder(streamMic, mime ? { mimeType: mime } : {});
+  mediaRecorder.ondataavailable = (e) => {
+    console.log("ondataavailable:", e.data.size);
+    if (e.data.size) chunks.push(e.data);
+  };
   mediaRecorder.onstop = () => {
-    if (chunks.length) setNuevoAudio(new Blob(chunks, { type: mediaRecorder.mimeType || "audio/webm" }));
+    console.log("onstop - chunks:", chunks.length, "mimeType:", mediaRecorder.mimeType);
+    if (chunks.length) {
+      const blob = new Blob(chunks, { type: mediaRecorder.mimeType || "audio/webm" });
+      console.log("Blob creado:", blob.type, blob.size);
+      setNuevoAudio(blob);
+    } else {
+      console.log("No hay chunks para guardar");
+    }
   };
   mediaRecorder.start();
 
